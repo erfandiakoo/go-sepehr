@@ -1,0 +1,63 @@
+name: Go Package Release
+
+on:
+  push:
+    branches:
+      - main  # Adjust if your default branch is different
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history to check tags
+
+      - name: Get latest tag
+        id: get-latest-tag
+        run: |
+          latest_tag=$(git tag --sort=-v:refname | head -n 1)
+          if [[ -z "$latest_tag" ]]; then
+            latest_tag="0.0.0"
+          fi
+          echo "Latest tag found: $latest_tag"
+          echo "latest_tag=$latest_tag" >> $GITHUB_ENV
+
+      - name: Bump version
+        id: bump-version
+        run: |
+          IFS='.' read -r -a version_parts <<< "${{ env.latest_tag }}"
+          major=${version_parts[0]}
+          minor=${version_parts[1]}
+          patch=${version_parts[2]}
+          new_patch=$((patch + 1))
+          new_version="$major.$minor.$new_patch"
+          echo "New version: $new_version"
+          echo "new_version=$new_version" >> $GITHUB_ENV
+
+      - name: Get latest commit message
+        id: get-commit-message
+        run: |
+          commit_message=$(git log -1 --pretty=%B)
+          echo "Commit message: $commit_message"
+          echo "commit_message=$commit_message" >> $GITHUB_ENV
+
+      - name: Create new tag
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git tag ${{ env.new_version }}
+          git push origin ${{ env.new_version }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.new_version }}
+          name: "${{ env.new_version }}"
+          body: "${{ env.commit_message }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
