@@ -156,3 +156,14 @@ type GetTokenResponse struct {
 	Status      int64  `json:"Status"`
 	AccessToken string `json:"AccessToken"`
 }
+
+type AdviceRequest struct {
+	DigitalReceipt string `json:"digitalreceipt"`
+	TerminalID     string `json:"Tid"`
+}
+
+type AdviceResponse struct {
+	Status   string `json:"Status"`
+	ReturnID string `json:"ReturnId"`
+	Message  string `json:"Message"`
+}

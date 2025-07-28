@@ -15,7 +15,8 @@ type GoSepehr struct {
 	basePath    string
 	restyClient *resty.Client
 	Config      struct {
-		GetToken string
+		GetTokenEndpoint string
+		AdviceEndpoint   string
 	}
 }
 
@@ -86,7 +87,8 @@ func NewClient(basePath string, options ...func(*GoSepehr)) *GoSepehr {
 		restyClient: resty.New(),
 	}
 
-	c.Config.GetToken = makeURL("V1", "PeymentApi", "GetToken")
+	c.Config.GetTokenEndpoint = makeURL("V1", "PeymentApi", "GetToken")
+	c.Config.AdviceEndpoint = makeURL("V1", "PeymentApi", "Advice")
 
 	for _, option := range options {
 		option(&c)
@@ -153,9 +155,24 @@ func (g *GoSepehr) GetToken(ctx context.Context, req GetTokenRequest) (*GetToken
 	response, err := g.GetRequestNormal(ctx).
 		SetBody(req).
 		SetResult(&resp).
-		Post(g.basePath + "/" + g.Config.GetToken)
+		Post(g.basePath + "/" + g.Config.GetTokenEndpoint)
 
 	if err := checkForError(response, err, "error getting token"); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+func (g *GoSepehr) Advice(ctx context.Context, req AdviceRequest) (*AdviceResponse, error) {
+	var resp AdviceResponse
+
+	response, err := g.GetRequestNormal(ctx).
+		SetBody(req).
+		SetResult(&resp).
+		Post(g.basePath + "/" + g.Config.AdviceEndpoint)
+
+	if err := checkForError(response, err, "error getting advice"); err != nil {
 		return nil, err
 	}
 
